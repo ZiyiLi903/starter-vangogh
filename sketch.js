@@ -286,25 +286,58 @@ function drawBrushStroke(g, x, y, angle, col) {
 
 // ★★★★★★ 第 2 步 开始：把这里的 skyColor 函数整个换成 Qwen 写的版本 ★★★★★★
 function skyColor(x, y) {
-  // 生成柏林噪声，用于天空底色的自然过渡
+   // 基础噪声底色：深蓝 → 蓝紫 → 浅青蓝
   let n = noise(x * 0.01, y * 0.01);
-  // 在深蓝与浅蓝之间通过噪声插值，得到基础天空色
-  let c = lerpColor(color("#1b2a6b"), color("#6c8fd8"), n);
+  let c;
 
-  // 遍历所有星星，在星星周围叠加暖黄色光晕
+  if (n < 0.5) {
+    c = lerpColor(color("#13235c"), color("#4158a8"), n * 2);
+  } else {
+    c = lerpColor(color("#4158a8"), color("#7fc4ff"), (n - 0.5) * 2);
+  }
+
+  // 增加紫蓝色随机偏移
+  let rVal = red(c);
+  let gVal = green(c);
+  let bVal = blue(c);
+
+  rVal = constrain(rVal + random(-25, 40), 0, 255);
+  gVal = constrain(gVal + random(-20, 35), 0, 255);
+  bVal = constrain(bVal + random(-40, 40), 20, 255);
+
+  // 小概率混入青色，让笔触更丰富
+  if (random() < 0.5) {
+    rVal = constrain(rVal + random(0, 25), 0, 255);
+    gVal = constrain(gVal + random(15, 50), 0, 255);
+    bVal = constrain(bVal + random(10, 35), 20, 255);
+  }
+
+  // 小概率混入少量紫色
+  if (random() < 0.45) {
+    rVal = constrain(rVal + random(10, 30), 0, 255);
+    gVal = constrain(gVal - random(0, 20), 0, 255);
+    bVal = constrain(bVal + random(-20, 25), 20, 255);
+  }
+
+  c = color(rVal, gVal, bVal);
+
+  // 星星暖黄色光晕
   for (const s of stars) {
     let d = dist(x, y, s.x, s.y);
-    // 距离星星越近，黄色光晕越明显
     if (d < s.r * 2.5) {
-      c = lerpColor(c, color("#f2d34f"), 1 - d / (s.r * 2.5));
+      c = lerpColor(c, color("#ffd95a"), 1 - d / (s.r * 2.5));
     }
   }
 
-  // 设置随机透明度，模拟夜空颗粒质感
-  c.setAlpha(random(150, 230));
+  // 偶尔加一点高光白蓝色
+  if (random() < 0.08) {
+    c = lerpColor(c, color("#ffffff"), random(0.1, 0.35));
+  }
+
+  c.setAlpha(random(140, 220));
   return c;
 }
-// ★★★★★★ 第 2 步 结束 ★★★★★★
+
 
 
 // ★★★★★★ 第 3 步 开始：把这里的 flowAngle 函数整个换成 Qwen 写的版本 ★★★★★★
@@ -321,7 +354,7 @@ function flowAngle(x, y) {
     let d = max(dist(x, y, s.x, s.y), 1);
     if (d < s.r * 4) {
       let weight = 1 - d / (s.r * 4);
-      vx += (-dy / d) * weight * 3;
+      vx += (-dy / d) * weight * 4;
       vy += (dx / d) * weight * 3;
     }
   }
